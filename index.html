@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="WhatsUp :-)">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="WhatsUp :-)">
+  <meta itemprop="image" content="icon.ico">
+  <meta itemprop="name" content="WhatsUp">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#ffffff">
+  <title>WhatsUp</title>
+  <link rel="icon" sizes="192x192" href="favicon.ico">
+  <style>
+  *{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+  }
+  .container {
+    width: 100vw;
+    height: 90vh;
+    margin: auto;
+  }
+  .chat {
+    display: flex;
+    flex-direction: column;
+    height:100vh;
+    background: #f1f0e8;
+  }
+  .chat-header {
+    display: flex;
+    cursor: pointer;
+  }
+  .profile {
+    width: 100%;
+    background: #036055;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    padding: 0px 10px;
+    position: relative;
+  }
+  .profile .pp {
+    width:40px;
+    display:inline-block;
+    border-radius:50%;
+    margin-right:1em;
+    margin-bottom:5px;
+  }
+  .profile .arrow {
+    display: inline-block;
+    width: 30px;
+    position: absolute;
+    top: 19px;
+    cursor: pointer;
+  }
+  .profile h2 {
+    display: inline-block;
+    line-height:60px;
+    vertical-align:bottom;
+    color:#fff;
+    font-size:20px;
+    margin-bottom:5px;
+  }
+  .profile span {
+    color:#ccc;
+    position:absolute;
+    top:38px;
+    left:80px;
+    font-size:14px;
+  }
+  .right .icon {
+    display: inline-block;
+    width: 25px;
+    margin-left: 10px;
+  }
+  .profile .left {
+    flex: 1;
+  }
+
+  .chat-box {
+    background: url('bg.jpeg');
+    background-attachment: fixed;
+    padding-left: 20px;
+    overflow-y: scroll;
+    flex: 1;
+  }
+  .chat-box .img_chat {
+    width: 80vw;
+  }
+
+  .chat-r {
+    display: flex;
+  }
+  .chat-r .sp {
+    flex: 1;
+  }
+
+  .chat-l {
+    display: flex;
+  }
+  .chat-l .sp {
+    flex: 1;
+  }
+
+  .chat-box .mess {
+    max-width: 80vw;
+    background: #F7FCF6;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 20px 0px;
+    cursor: pointer;
+  }
+  .chat-box .mess p     { word-break:break-all;font-size:18px; }
+  .chat-box .mess-r     { background: #E2FFC7; }
+  .chat-box .emoji      { width:20px; }
+  .chat-box .check      { float:right; }
+  .chat-box .check img  { width:20px; }
+  .chat-box .check span { color:#888;font-size:0.7em;font-weight:700px; }
+
+  *::-webkit-scrollbar { width:10px; }
+  *::-webkit-scrollbar-track { background:#f1f1f1; }
+  *::-webkit-scrollbar-thumb { background:#aaa; }
+  *::-webkit-scrollbar-thumb:hover { background:#555; }
+
+  .chat-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 30px;
+    position: relative;
+    cursor: pointer;
+  }
+  .chat-footer textarea {
+    display: block;
+    flex: 1;
+    width: 100%;
+    height: 50px;
+    border-radius: 10px;
+    margin: 5px;
+    padding: 10px;
+    outline: none;
+    font-size: 19px;
+    padding-left: 40px;
+    padding-right: 90px;
+    border: 2px solid #ccc;
+    color: #555;
+    resize: none;
+  }
+  .chat-footer .emo { display:block; width:35px; height:35px; position:absolute; left:10px; top:12px;  }
+  .chat-footer .icons { position:absolute; right:10px; top:12px; }
+  .chat-footer .icons img{ display:inline-block; width:35px; height:35px; margin-right:5px; }
+  </style>
+  <script>
+  var m_WebSocket = null;
+  var m_sName     = "mobile";
+  //
+  function websocketInit()
+  {
+    let sSearch = window.location.search;
+    let urlParams = new URLSearchParams( sSearch );
+    //
+    let sUrl = urlParams.get( "ws" );                                         //get parameter "ws"
+    if( sUrl == null ) { sUrl = "127.0.0.1"; }                                //set default if not set
+    //
+    let sNam = urlParams.get( "nm" );                                         //get parameter "nm" (name)
+    if( sNam == null ) { sNam = "Mobil"; }                                    //set default if not set
+    //
+    document.getElementsByTagName( "h2" )[0].innerHTML = sNam;                //set name in the headline
+    m_WebSocket = new WebSocket( "ws://"+sUrl+":8181" );                      //create websocket client
+    m_WebSocket.onopen    = wsOnOpen;                                         //handle
+    m_WebSocket.onclose   = wsOnClose;                                        // all events
+    m_WebSocket.onmessage = wsOnMessage;
+    m_WebSocket.onerror   = wsOnError;
+    m_sName = sNam;                                                           //set global name
+  }
+  
+  /**
+   *  This function handles the websocketclient OPEN event.
+   */
+  function wsOnOpen()
+  {
+    let Ele = document.getElementById( "status" );
+    Ele.innerHTML = "online";
+  }
+
+  /**
+   *  This function handles the websocketclient CLOSE event.
+   */
+  function wsOnClose()
+  {
+    let Ele = document.getElementById( "status" );
+    Ele.innerHTML = "offline";
+  }
+
+  /**
+   *  This function handles the websocketclient RECEIVE event.
+   */
+  function wsOnMessage( event )
+  {
+    let Msg   = JSON.parse( event.data );
+    let sUser = Msg.user;
+    //
+    if( Msg.text !== undefined )
+    {
+      let sText = Msg.text;
+      if( sText.startsWith( "http" ) )
+        addMsg( "<a href='"+sText+"'>"+sText+"</a>", Msg.user );
+      else
+        addMsg( sText, Msg.user );
+    }
+    else if( Msg.link !== undefined )
+    {
+      let sLink = Msg.link;
+      let sFile = Msg.name;
+      if( (sLink.endsWith(".jpg")) || (sLink.endsWith(".png")) || (sLink.endsWith(".bmp")) )
+        addMsg( "<a href='"+sLink+"'><img src='"+sLink+"' style='max-width:80vw;max-height:30vh;'></img></a>", Msg.user );
+      else if( (sLink.endsWith(".mp3")) || (sLink.endsWith(".wav")) )
+        addMsg( "<a href='"+sLink+"'><img src='music.png' style='width:2em;'></img>'"+sFile+"'</a>", Msg.user );
+      else if( (sLink.endsWith(".doc")) || (sLink.endsWith(".pdf")) || (sLink.endsWith(".txt")) )
+        addMsg( "<a href='"+sLink+"'><img src='doc.png' style='width:2em;'></img>'"+sFile+"'</a>", Msg.user );
+      else
+        addMsg( "<a href='"+sLink+"'>Download '"+sFile+"'</a>", Msg.user  );
+    }
+    else
+    {
+      addMsg( "???" + event.data );
+    }
+  }
+  
+  /**
+   *  This function handles the websocketclient ERROR event.
+   *  @param  event   event structure of the error
+   */
+  function wsOnError( event )
+  {
+    let Ele = document.getElementById( "status" );                            //get the status GUI element
+    Ele.innerHTML = "error";                                                  //set text
+    addMsg( event.data );                                                     //add message
+  }
+  
+  function addMsg( sText, sName = "" )
+  {
+    let Ele  = document.getElementById( "chatbox" );
+    let sMsg = "";
+    //
+    sText = sText.replaceAll( "\n", "<br/>" );
+    //
+    if( sName != m_sName )
+    {
+      sMsg += "<div class='chat-l'>";
+      sMsg += " <div class='mess'>";
+      sMsg += "  <p>"+sText+"</p>";
+      sMsg += "  <div class='check'>";
+      sMsg += "   <span>"+sName+"</span>";
+      sMsg += "  </div>";
+      sMsg += " </div>";
+      sMsg += " <div class='sp'></div>";
+      sMsg += "</div>";
+    }
+    else
+    {
+      sMsg += "<div class='chat-r'>";
+      sMsg += " <div class='sp'></div>";
+      sMsg += " <div class='mess mess-r'>";
+      sMsg += "  <p>"+sText+"</p>";
+      sMsg += "  <div class='check'>";
+      sMsg += "   <span>"+sName+"</span>";
+      sMsg += "  </div>";
+      sMsg += " </div>";
+      sMsg += "</div>";
+    }
+    //
+    Ele.innerHTML += sMsg;              //add new message
+    Ele.scrollTop = Ele.scrollHeight;   //scroll to the bottom
+  }
+  
+  /**
+   *  This function sends the text.
+   */
+  function sendText()
+  {
+    let Ele = document.getElementById( "message" );
+    let Obj = { user: m_sName, text: Ele.value };
+    let sJS = JSON.stringify( Obj );
+    m_WebSocket.send( sJS ); 
+  }
+  
+  function triggerFile()
+  {
+    document.getElementById( "file" ).click();
+  }
+  
+  function sendFile( lFiles )
+  {
+    if( lFiles ) 
+    {
+      [].forEach.call( lFiles, sendSingleFile );
+    }
+  }
+
+  function sendSingleFile( File )
+  {
+    var reader = new FileReader();
+    reader.filename = File.name;
+    reader.addEventListener( "load", 
+      function () 
+      {
+        let Obj = { user: m_sName, fname: reader.filename, fdata: this.result };
+        let sJS = JSON.stringify( Obj );
+        m_WebSocket.send( sJS ); 
+      }
+    );
+    reader.readAsDataURL( File );
+  }
+  
+  </script>
+</head>
+<body onload="websocketInit();">
+  <div class="container">
+    <div class="chat">
+      <!-- HEADER START -->
+      <div class="chat-header">
+        <div class="profile">
+          <div class="left">
+            <img src="icon.png" class="pp">
+            <h2>Datenaustausch</h2>
+            <span id="status">offline</span>
+          </div>
+          <div class="right">
+            <img src="more.png" class="icon">
+          </div>
+        </div>
+      </div>
+      <!-- HEADER END -->
+      <!-- CHAT AREA  -->
+      <div class="chat-box" id="chatbox">
+      <!-- content of the chat... -->
+      </div>
+      <!-- -->
+      <input type="file" id="file" multiple accept="*" style="display:none" onchange="sendFile(this.files)">
+      <!-- FOOTER START  -->
+      <div class="chat-footer">
+        <img src="emo.png" class="emo">
+        <textarea id="message" placeholder="Type a message"></textarea>
+        <div class="icons">
+          <img src="attachfile.png" onclick="triggerFile();">
+          <img src="arrow.png" onclick="sendText();">
+        </div>
+      </div>
+      <!-- FOOTER END  -->
+    </div>  <!-- div class="chat" -->
+  </div>  <!-- div class="container" -->
+</body>
+</html>
